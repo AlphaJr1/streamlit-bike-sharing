@@ -1,54 +1,110 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Title and Introduction
-st.title("Data Analysis Project: Bicycle Rentals")
-st.markdown("**Created by Adrian Alfajri**")
-st.markdown("This dashboard presents an analysis of bicycle rentals based on daily and hourly trends, considering weather and other conditions.")
+# Customizing the page and sidebar
+st.set_page_config(page_title="Bicycle Rental Dashboard", page_icon="🚲", layout="wide")
 
-# Load the datasets
+# Sidebar for Navigation
+st.sidebar.title("Navigation")
+option = st.sidebar.selectbox("Select an analysis view:", ["Overview", "Daily Analysis", "Hourly Analysis", "Weather Analysis"])
+
+# Load Data
 @st.cache_data
 def load_data(file_path):
-    data = pd.read_csv(file_path)
-    return data
+    return pd.read_csv(file_path)
 
-# Load day_clean.csv and hour_clean.csv
-day_data = load_data('./dashboard/day_clean.csv')
-hour_data = load_data('./dashboard/hour_clean.csv')
+# Load datasets
+day_data = load_data('dashboard/day_clean.csv')
+hour_data = load_data('dashboard/hour_clean.csv')
 
-# Display data preview
-st.subheader("Daily Data Preview")
-st.dataframe(day_data.head())
+# Overview Section
+if option == "Overview":
+    st.title("🚲 Bicycle Rental Dashboard - Overview")
+    st.markdown("### This dashboard provides insights into bicycle rentals with data analysis based on daily, hourly, and weather conditions.")
 
-st.subheader("Hourly Data Preview")
-st.dataframe(hour_data.head())
+    st.markdown("#### Data Preview")
+    st.write("**Daily Data Sample**")
+    st.dataframe(day_data.head(5))
 
-# Plot Daily Rentals
-st.subheader("Daily Rentals Analysis")
-fig1, ax1 = plt.subplots()
-ax1.plot(day_data['date'], day_data['total_rentals'], marker='o', linestyle='-', color='b')
-ax1.set_xlabel('Date')
-ax1.set_ylabel('Total Rentals')
-ax1.set_title('Total Rentals by Day')
-plt.xticks(rotation=45)
-st.pyplot(fig1)
+    st.write("**Hourly Data Sample**")
+    st.dataframe(hour_data.head(5))
 
-# Plot Hourly Rentals by Time of Day
-st.subheader("Hourly Rentals Analysis")
-hourly_avg = hour_data.groupby('hour')['total_rentals'].mean().reset_index()
-fig2, ax2 = plt.subplots()
-ax2.plot(hourly_avg['hour'], hourly_avg['total_rentals'], marker='o', linestyle='-', color='g')
-ax2.set_xlabel('Hour of the Day')
-ax2.set_ylabel('Average Rentals')
-ax2.set_title('Average Rentals by Hour of Day')
-st.pyplot(fig2)
+    # Display Summary Statistics
+    st.markdown("#### Summary Statistics")
+    daily_stats = day_data.describe()
+    hourly_stats = hour_data.describe()
+    st.write("**Daily Data Summary**")
+    st.dataframe(daily_stats)
+    st.write("**Hourly Data Summary**")
+    st.dataframe(hourly_stats)
 
-# Display rental trends by weather condition
-st.subheader("Rental Trends by Weather Condition")
-weather_summary = day_data.groupby('weather_situation')['total_rentals'].mean().reset_index()
-st.bar_chart(weather_summary, x='weather_situation', y='total_rentals')
+# Daily Analysis Section
+elif option == "Daily Analysis":
+    st.title("📅 Daily Analysis of Bicycle Rentals")
+    st.markdown("#### Analyzing the total bicycle rentals across different days.")
 
-# Conclusion
-st.markdown("**Conclusion**: This dashboard provides an overview of bicycle rental trends based on day and hour data. You can explore further by filtering specific time frames and weather conditions.")
+    # Daily Rentals Plot
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(day_data['dteday'], day_data['cnt'], marker='o', linestyle='-', color='b', label='Total Rentals')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Total Rentals')
+    ax.set_title('Total Bicycle Rentals by Day')
+    plt.xticks(rotation=45)
+    plt.legend()
+    st.pyplot(fig)
+
+    # Weekly Rentals Average
+    day_data['weekday'] = pd.to_datetime(day_data['dteday']).dt.day_name()
+    weekly_avg = day_data.groupby('weekday')['cnt'].mean().reindex(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+    st.markdown("#### Average Bicycle Rentals by Day of the Week")
+    st.bar_chart(weekly_avg)
+
+# Hourly Analysis Section
+elif option == "Hourly Analysis":
+    st.title("⏰ Hourly Analysis of Bicycle Rentals")
+    st.markdown("#### Analyzing the hourly bicycle rental trends.")
+
+    # Average Rentals by Hour Plot
+    hourly_avg = hour_data.groupby('hr')['cnt'].mean().reset_index()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.lineplot(x='hr', y='cnt', data=hourly_avg, marker='o', color='g', ax=ax)
+    ax.set_xlabel('Hour of the Day')
+    ax.set_ylabel('Average Rentals')
+    ax.set_title('Average Bicycle Rentals by Hour of the Day')
+    st.pyplot(fig)
+
+    # Distribution of Rentals by Hour
+    st.markdown("#### Distribution of Rentals by Hour")
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.histplot(hour_data['hr'], bins=24, kde=True, color='orange', ax=ax)
+    ax.set_xlabel('Hour of the Day')
+    ax.set_ylabel('Frequency of Rentals')
+    ax.set_title('Distribution of Rentals Across Hours of the Day')
+    st.pyplot(fig)
+
+# Weather Analysis Section
+elif option == "Weather Analysis":
+    st.title("☀️🌧️ Weather Analysis of Bicycle Rentals")
+    st.markdown("#### Analyzing the impact of weather conditions on bicycle rentals.")
+
+    # Group by Weather Conditions
+    weather_summary = day_data.groupby('weathersit')['cnt'].mean().reset_index()
+    weather_summary['Weather'] = weather_summary['weathersit'].map({1: 'Clear', 2: 'Cloudy', 3: 'Rainy', 4: 'Severe Weather'})
+    st.markdown("#### Average Rentals by Weather Condition")
+    st.bar_chart(weather_summary, x='Weather', y='cnt')
+
+    # Rentals by Temperature
+    st.markdown("#### Rentals by Temperature")
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.scatterplot(x='temp', y='cnt', data=day_data, ax=ax, hue='weathersit', palette='coolwarm', s=100)
+    ax.set_xlabel('Temperature (Normalized)')
+    ax.set_ylabel('Total Rentals')
+    ax.set_title('Scatter Plot of Rentals by Temperature')
+    plt.legend(title='Weather Condition', labels=['Clear', 'Cloudy', 'Rainy', 'Severe Weather'])
+    st.pyplot(fig)
+
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.write("Created by Adrian Alfajri")
