@@ -47,7 +47,7 @@ elif option == "Daily Analysis":
 
     # Daily Rentals Plot
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(day_data['dteday'], day_data['cnt'], marker='o', linestyle='-', color='b', label='Total Rentals')
+    ax.plot(day_data['date'], day_data['total_rentals'], marker='o', linestyle='-', color='b', label='Total Rentals')
     ax.set_xlabel('Date')
     ax.set_ylabel('Total Rentals')
     ax.set_title('Total Bicycle Rentals by Day')
@@ -56,8 +56,8 @@ elif option == "Daily Analysis":
     st.pyplot(fig)
 
     # Weekly Rentals Average
-    day_data['weekday'] = pd.to_datetime(day_data['dteday']).dt.day_name()
-    weekly_avg = day_data.groupby('weekday')['cnt'].mean().reindex(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+    day_data['weekday'] = pd.to_datetime(day_data['date']).dt.day_name()
+    weekly_avg = day_data.groupby('weekday')['total_rentals'].mean().reindex(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
     st.markdown("#### Average Bicycle Rentals by Day of the Week")
     st.bar_chart(weekly_avg)
 
@@ -67,9 +67,9 @@ elif option == "Hourly Analysis":
     st.markdown("#### Analyzing the hourly bicycle rental trends.")
 
     # Average Rentals by Hour Plot
-    hourly_avg = hour_data.groupby('hr')['cnt'].mean().reset_index()
+    hourly_avg = hour_data.groupby('hour')['total_rentals'].mean().reset_index()
     fig, ax = plt.subplots(figsize=(12, 6))
-    sns.lineplot(x='hr', y='cnt', data=hourly_avg, marker='o', color='g', ax=ax)
+    sns.lineplot(x='hour', y='total_rentals', data=hourly_avg, marker='o', color='g', ax=ax)
     ax.set_xlabel('Hour of the Day')
     ax.set_ylabel('Average Rentals')
     ax.set_title('Average Bicycle Rentals by Hour of the Day')
@@ -78,7 +78,7 @@ elif option == "Hourly Analysis":
     # Distribution of Rentals by Hour
     st.markdown("#### Distribution of Rentals by Hour")
     fig, ax = plt.subplots(figsize=(12, 6))
-    sns.histplot(hour_data['hr'], bins=24, kde=True, color='orange', ax=ax)
+    sns.histplot(hour_data['hour'], bins=24, kde=True, color='orange', ax=ax)
     ax.set_xlabel('Hour of the Day')
     ax.set_ylabel('Frequency of Rentals')
     ax.set_title('Distribution of Rentals Across Hours of the Day')
@@ -90,15 +90,15 @@ elif option == "Weather Analysis":
     st.markdown("#### Analyzing the impact of weather conditions on bicycle rentals.")
 
     # Group by Weather Conditions
-    weather_summary = day_data.groupby('weathersit')['cnt'].mean().reset_index()
-    weather_summary['Weather'] = weather_summary['weathersit'].map({1: 'Clear', 2: 'Cloudy', 3: 'Rainy', 4: 'Severe Weather'})
+    weather_summary = day_data.groupby('weather_situation')['total_rentals'].mean().reset_index()
+    weather_summary['Weather'] = weather_summary['weather_situation'].map({1: 'Clear', 2: 'Cloudy', 3: 'Rainy', 4: 'Severe Weather'})
     st.markdown("#### Average Rentals by Weather Condition")
-    st.bar_chart(weather_summary, x='Weather', y='cnt')
+    st.bar_chart(weather_summary, x='Weather', y='total_rentals')
 
     # Rentals by Temperature
     st.markdown("#### Rentals by Temperature")
     fig, ax = plt.subplots(figsize=(12, 6))
-    sns.scatterplot(x='temp', y='cnt', data=day_data, ax=ax, hue='weathersit', palette='coolwarm', s=100)
+    sns.scatterplot(x='temperature', y='total_rentals', data=day_data, ax=ax, hue='weather_situation', palette='coolwarm', s=100)
     ax.set_xlabel('Temperature (Normalized)')
     ax.set_ylabel('Total Rentals')
     ax.set_title('Scatter Plot of Rentals by Temperature')
